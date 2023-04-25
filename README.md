@@ -41,7 +41,7 @@ Opensource utility to build/convert soundpacks for MechaKeys et al.
 
 <br/>
 
-## Compatability:
+## Compatability
 
 This repo is capable of importing soundpacks from all the following:
 > MechaKeys, KeyTao, Mechvibes, Mechvibes++, Modelm, and RustyVibes
