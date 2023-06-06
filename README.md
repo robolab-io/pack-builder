@@ -9,8 +9,8 @@ Opensource utility to build/convert soundpacks for MechaKeys et al.
   </tr>
   
   <tr>
-    <td>Enhnced</td>
-    <td> Per-key attributes, including but not limmited to: <br/> Probability, pitch, volume, stereo, loop, type-rate, simultaneous, delay, etc. </td>
+    <td>Enhanced</td>
+    <td> Per-key attributes, including but not limited to: <br/> Probability, pitch, volume, stereo, loop, type-rate, simultaneous, delay, etc. </td>
   </tr>
   
   <tr>
