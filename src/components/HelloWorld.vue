@@ -1,15 +1,22 @@
 <script setup>
   import { useDropZone } from '@vueuse/core'
-  import {demo} from 'pack-builder'
+  import {handleUpload} from 'pack-builder'
 
-  demo()
   const dropZoneRef = ref()
 
   function onDrop(files) {
-    // called when files are dropped on zone
+    handleUpload(files)
+    /*
+      type: "application/json" //json
+      type: "" // .mecha
+      type: "" // folder
+      type: "application/x-zip-compressed" // robolab soundpack raw zip
+      type: "audio/mpeg"  // mp3
+    */
   }
 
   const { isOverDropZone } = useDropZone(dropZoneRef, onDrop)
+
 </script>
 
 <template>
@@ -20,3 +27,4 @@
 
 <style scoped>
 </style>
+
