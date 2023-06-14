@@ -1,6 +1,8 @@
 <script setup>
   import { useDropZone } from '@vueuse/core'
+  import {demo} from 'pack-builder'
 
+  demo()
   const dropZoneRef = ref()
 
   function onDrop(files) {
