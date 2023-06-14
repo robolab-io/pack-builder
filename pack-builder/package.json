@@ -4,6 +4,9 @@
   "type": "module",
   "main": "index.js",
   "description": "Opensource utility to build/convert soundpacks for MechaKeys et al.",
+  "peerDependencies": {
+    "jszip": "^3.10.1"
+  },
   "author": "",
   "license": "ISC"
 }
