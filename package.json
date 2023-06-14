@@ -1,0 +1,20 @@
+{
+  "name": "pack-builder",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Opensource utility to build/convert soundpacks for MechaKeys et al.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.2.47"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.1.0",
+    "vite": "^4.3.9"
+  },
+  "author": "",
+  "license": "ISC"
+}
