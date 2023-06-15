@@ -9,8 +9,8 @@
 
   const dropZoneRef = ref()
 
-  function onDrop(files) {
-    handleUpload(files)
+  async function onDrop(files) {
+    await handleUpload(files)
     /*
       type: "application/json" //json
       type: "" // .mecha
