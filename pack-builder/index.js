@@ -7,32 +7,6 @@
 */
 import JSZip from 'jszip'
 
-let isMechaKeysV2Zip = () => { // && KeyTao
-  
-}
-
-let checkMechaKeysLegacy = (zip) => {
-  let isKeyPack = ['enter', 'space', 'alpha', 'alt'].every(dir => {
-    let pattern = new RegExp(`[^\/]*\/${dir}\/$`)
-    return zip.folder(pattern)?.[0] ?? false
-  })
-
-  let isMousePack = ['left', 'middle', 'right'].every(dir => {
-    let pattern = new RegExp(`[^\/]*\/${dir}\/$`)
-    return zip.folder(pattern)?.[0] ?? false
-  })
-
-  return {isKeyPack, isMousePack}
-}
-
-let isMechVibesConfig = (data) => {  // && rustyvibes
-  return ["id", "name", "key_define_type", /* "includes_numpad", */ "sound", "defines"].every(k => k in data)
-}
-
-let isMechVibesPPConfig = (data) => {
-  return Object.keys(data.defines).some(k => /^0+/.test(k))
-}
-
 let loadZip = async (file) => {
   let zip = await JSZip
     .loadAsync(file)
@@ -47,12 +21,41 @@ let loadZip = async (file) => {
   return zip
 }
 
-const getConfigYAML = (zip) => {
-  return zip.file(/[^\/]*\/config.(yaml|yml)/)?.[0] ?? false
+let checkMechaKeysLegacy, isMechVibesConfig, isMechVibesPPConfig, getConfigYAML, getConfigJSON;
+Pack_Detection : {
+  checkMechaKeysLegacy = (zip) => {
+    let isKeyPack = ['enter', 'space', 'alpha', 'alt'].every(dir => {
+      let pattern = new RegExp(`[^\/]*\/${dir}\/$`)
+      return zip.folder(pattern)?.[0] ?? false
+    })
+
+    let isMousePack = ['left', 'middle', 'right'].every(dir => {
+      let pattern = new RegExp(`[^\/]*\/${dir}\/$`)
+      return zip.folder(pattern)?.[0] ?? false
+    })
+
+    return {isKeyPack, isMousePack}
+  }
+
+  isMechVibesConfig = (data) => {  // && rustyvibes
+    return ["id", "name", "key_define_type", /* "includes_numpad", */ "sound", "defines"].every(k => k in data)
+  }
+
+  isMechVibesPPConfig = (data) => {
+    return Object.keys(data.defines).some(k => /^0+/.test(k))
+  }
+
+  getConfigYAML = (zip) => {
+    return zip.file(/[^\/]*\/config.(yaml|yml)/)?.[0] ?? false
+  }
+
+  getConfigJSON = (zip) => {
+    return zip.file(/[^\/]*\/config.json/)?.[0] ?? false
+  }
 }
 
-const getConfigJSON = (zip) => {
-  return zip.file(/[^\/]*\/config.json/)?.[0] ?? false
+Parse_Packs: {
+  
 }
 
 export async function handleUpload(files) {
