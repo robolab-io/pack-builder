@@ -11,25 +11,33 @@ let isMechaKeysV2Zip = () => { // && KeyTao
   
 }
 
-let isMechaKeysLegacyZip = () => {
-  // has the form of 
-  // /enter /space /alpha /alt (/style?)
-  // /left /middle /right
+let checkMechaKeysLegacy = (zip) => {
+  let isKeyPack = ['enter', 'space', 'alpha', 'alt'].every(dir => {
+    let pattern = new RegExp(`[^\/]*\/${dir}\/$`)
+    return zip.folder(pattern)?.[0] ?? false
+  })
+
+  let isMousePack = ['left', 'middle', 'right'].every(dir => {
+    let pattern = new RegExp(`[^\/]*\/${dir}\/$`)
+    return zip.folder(pattern)?.[0] ?? false
+  })
+
+  return {isKeyPack, isMousePack}
 }
 
-let isMechVibesZip = () => {  // && rustyvibes
-
+let isMechVibesConfig = (data) => {  // && rustyvibes
+  return ["id", "name", "key_define_type", /* "includes_numpad", */ "sound", "defines"].every(k => k in data)
 }
 
-let isMechVibesPPZip = () => {
-
+let isMechVibesPPConfig = (data) => {
+  return Object.keys(data.defines).some(k => /^0+/.test(k))
 }
 
 let loadZip = async (file) => {
   let zip = await JSZip
     .loadAsync(file)
     .then( zip => {
-      console.log('loaded zip')
+      //console.log('loaded zip')
       return zip
     })
     .catch( err => {
@@ -61,16 +69,36 @@ export async function handleUpload(files) {
     
       let isConfigYAML = getConfigYAML(zip)
       let isConfigJSON = getConfigJSON(zip)
+      let isMechaKeysLegacy = checkMechaKeysLegacy(zip)
     
+      // Modelm
       if (isConfigYAML) {
-        return console.log('isModelmZip')
+        return console.log('Modelm')
       }
     
+      // Mechvibes || MechvibesPP || MechaKeysV2
       if (isConfigJSON) {
-        return console.log('isMechaKeysV2Zip || isMechVibesZip || isMechVibesPPZip')
+        let data = JSON.parse(
+          await isConfigJSON.async('text') || '{}'
+        )
+
+        // Mechvibes check
+        if (isMechVibesConfig(data)) {
+          // no good way to differentiate mouse vs key packs
+          if (isMechVibesPPConfig(data)) return console.log('Mechvibes PP')
+          return console.log('Mechvibes', data["key_define_type"])
+        }
+        
+        // V2 check (will prob just have a schema key)
+        return console.log('MechaKeys V2', data?.schema)
       }
     
-      return console.log('isMechaKeysV2Zip || isMechaKeysLegacyZip')
+      // MechaKeys
+      if (Object.values(isMechaKeysLegacy).some(k=>k)) {
+        return console.log('MechaKeys Legacy', isMechaKeysLegacy)
+      }
+    
+      return console.warn('failed to identify zip pack')
     }
 
     // pack
