@@ -70,12 +70,19 @@ Parse_Packs: {
 
       for (let [keyCode, path] of Object.entries(defines)) {
         let pattern = new RegExp(`.*/${path}$`)
-        let audioBlob = await zip.file(pattern)?.[0]?.async("blob")
+        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
+        if (!audioBlob) continue
+
+        let isUp = /^0[1-9]/.test(keyCode) // varies depending on ouse vs keyboard keybord up has two down has 1 or none
+
+        pack.assignment[keyCode] = {     // create obj if it doesn't exist
+          ...pack.assignment?.[keyCode], // re-inherit if it did
+          []
+        }
+        
 
         console.log('hit', audioBlob)
         //let hashName = spHash(path, audioBlob)
-
-        if (!audioBlob) continue
 
         let audio = document.createElement("audio");
         audio.src = URL.createObjectURL(audioBlob);
@@ -119,7 +126,11 @@ export async function handleUpload(files) {
     soundpackNames: {
       // shared sound files go in a 'common' sound directory
       // this allows for reuse across multiple keys and groups without having to dupe the file
-      contentHash: {name:'sound file name', blob: 'valueTMP'} // may be full hash or appended to name (specifics don't matter as long as things line up)
+      contentHash: {
+        name:'sound file name', 
+        blob: 'valueTMP',
+        refCount: 0 //?
+      } // may be full hash or appended to name (specifics don't matter as long as things line up)
     },
     assignment: {
       default: [],
@@ -158,6 +169,7 @@ export async function handleUpload(files) {
           if (isMechVibesPPConfig(config)) {
             config.isPP = true
             console.log('Mechvibes PP')
+            // add mouse detection, if sp only has keys 1,2,3
           } else { 
             console.log('Mechvibes', config["key_define_type"])
           }
