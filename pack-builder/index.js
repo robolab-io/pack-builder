@@ -21,7 +21,7 @@ let loadZip = async (file) => {
   return zip
 }
 
-let checkMechaKeysLegacy, isMechVibesConfig, isMechVibesPPConfig, getConfigYAML, getConfigJSON;
+let checkMechaKeysLegacy, isMechVibesConfig, isMechVibesPPConfig, getConfigYAML, getConfigJSON, isPPMouse;
 Pack_Detection : {
   checkMechaKeysLegacy = (zip) => {
     let isKeyPack = ['enter', 'space', 'alpha', 'alt'].every(dir => {
@@ -45,6 +45,12 @@ Pack_Detection : {
     return Object.keys(data.defines).some(k => /^0+/.test(k))
   }
 
+  isPPMouse = (config) =>  {
+    let definedKeys = new Set(Object.keys(config.defines).map(k => Number(k)))
+    if (definedKeys.size <= 3 && definedKeys.has(1) && definedKeys.has(2)) return true
+    return false
+  }
+
   getConfigYAML = (zip) => {
     return zip.file(/[^\/]*\/config.(yaml|yml)/)?.[0] ?? false
   }
@@ -60,6 +66,10 @@ Parse_Packs: {
     return ogName + '_fakehash' //hash spData
   }
 
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+  }
+
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
 
@@ -68,34 +78,48 @@ Parse_Packs: {
     } else {
       pack.name = name
 
-      for (let [keyCode, path] of Object.entries(defines)) {
-        let pattern = new RegExp(`.*/${path}$`)
+      for (let [keyCode, fileName] of Object.entries(defines)) {
+        if (!fileName) continue 
+
+        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
         let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
         if (!audioBlob) continue
 
-        let isUp = /^0[1-9]/.test(keyCode) // varies depending on ouse vs keyboard keybord up has two down has 1 or none
+        let hashName = spHash(fileName, audioBlob)
+        pack.soundNames[hashName] = {
+          name: fileName,
+          blob: audioBlob
+        }
+
+        let pressDir;
+        if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
+          pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
+          keyCode = 'M'+Number(keyCode)
+        } else {
+          pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
+          keyCode = Number(keyCode)
+        }
+
+        //how should i differentiate mouse vs keyboard keycodes?
 
         pack.assignment[keyCode] = {     // create obj if it doesn't exist
           ...pack.assignment?.[keyCode], // re-inherit if it did
-          []
+          [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
+            sounds: [hashName]
+            //conditions, mods, and mixers for this sound set would go here
+          }]
         }
-        
-
-        console.log('hit', audioBlob)
-        //let hashName = spHash(path, audioBlob)
-
-        let audio = document.createElement("audio");
-        audio.src = URL.createObjectURL(audioBlob);
-        audio.play();
-
       }
     }
 
     pack.metaData.push({
       association: 'PackImport',
-      sourcePack: isPP ? 'MechvibesPlusPlus' : 'Mechvibes',
+      sourcePack: isPP ? 'MechVibesPlusPlus' : 'MechVibes',
       id, name, key_define_type, includes_numpad
     })
+
+    console.log(pack)
+    return pack
   }
 }
 
@@ -123,7 +147,7 @@ export async function handleUpload(files) {
       fKeys: [ 59, 60, 61, 62, 63, 64, 65, 66,  67, 68, 87, 88 ],
       wasd: [ 17, 30, 31, 32 ]
     },
-    soundpackNames: {
+    soundNames: {
       // shared sound files go in a 'common' sound directory
       // this allows for reuse across multiple keys and groups without having to dupe the file
       contentHash: {
@@ -168,9 +192,9 @@ export async function handleUpload(files) {
           // no good way to differentiate mouse vs key packs
           if (isMechVibesPPConfig(config)) {
             config.isPP = true
-            console.log('Mechvibes PP')
-            // add mouse detection, if sp only has keys 1,2,3
-          } else { 
+            config.isMouse = isPPMouse(config)
+            console.log('Mechvibes PP', ['keypack', 'mousepack'][+config.isMouse])
+          } else {
             console.log('Mechvibes', config["key_define_type"])
           }
           return parseVibes(zip, config, pack)
