@@ -6,6 +6,7 @@
   type: "audio/mpeg"  // mp3
 */
 import JSZip from 'jszip'
+import YAML from 'yaml'
 
 let loadZip = async (file) => {
   let zip = await JSZip
@@ -60,7 +61,7 @@ Pack_Detection : {
   }
 }
 
-let spHash, parseVibes;
+let spHash, parseVibes, parseModelm;
 Parse_Packs: {
   spHash = (ogName, spData) => {
     return ogName + '_fakehash' //hash spData
@@ -71,6 +72,58 @@ Parse_Packs: {
   }
 
   parseVibes = async (zip, config, pack) => {
+    let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
+
+    if(key_define_type === 'single') {
+      console.log('wasm ffmpeg pack fixer required.\nUse on the given sound file:', sound)
+    } else {
+      pack.name = name
+
+      for (let [keyCode, fileName] of Object.entries(defines)) {
+        if (!fileName) continue 
+
+        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
+        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
+        if (!audioBlob) continue
+
+        let hashName = spHash(fileName, audioBlob)
+        pack.soundNames[hashName] = {
+          name: fileName,
+          blob: audioBlob
+        }
+
+        let pressDir;
+        if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
+          pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
+          keyCode = 'M'+Number(keyCode)
+        } else {
+          pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
+          keyCode = Number(keyCode)
+        }
+
+        //how should i differentiate mouse vs keyboard keycodes?
+
+        pack.assignment[keyCode] = {     // create obj if it doesn't exist
+          ...pack.assignment?.[keyCode], // re-inherit if it did
+          [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
+            sounds: [hashName]
+            //conditions, mods, and mixers for this sound set would go here
+          }]
+        }
+      }
+    }
+
+    pack.metaData.push({
+      association: 'PackImport',
+      sourcePack: isPP ? 'MechVibesPlusPlus' : 'MechVibes',
+      id, name, key_define_type, includes_numpad
+    })
+
+    console.log(pack)
+    return pack
+  }
+
+  parseModelm = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
 
     if(key_define_type === 'single') {
@@ -135,7 +188,7 @@ export async function handleUpload(files) {
     //acknowledgments: [...],
     //license: "",
 
-    /*** mostly guaranteed on import  ***/
+    /*** Mostly guaranteed on import  ***/
     name: '',
     groups: {
       // these are defaults
@@ -150,16 +203,18 @@ export async function handleUpload(files) {
     soundNames: {
       // shared sound files go in a 'common' sound directory
       // this allows for reuse across multiple keys and groups without having to dupe the file
-      contentHash: {
+      /* contentHash: {
         name:'sound file name', 
         blob: 'valueTMP',
         refCount: 0 //?
-      } // may be full hash or appended to name (specifics don't matter as long as things line up)
+      } */ // may be full hash or appended to name (specifics don't matter as long as things line up)
     },
     assignment: {
       default: [],
     },
     metaData: [],
+
+    /*** Optional on import  ***/
     assets: []
   }
 
@@ -178,13 +233,19 @@ export async function handleUpload(files) {
     
       // Modelm
       if (isConfigYAML) {
-        return console.log('Modelm')
+        let config = YAML.parse(
+          await isConfigYAML?.async('text') || ''
+        ) ?? {switches: []} 
+        // i should prob throw an error instead of pretending its an empty pack
+
+        console.log('Modelm')
+        return parseModelm(zip, config, pack)
       }
     
       // Mechvibes || MechvibesPP || MechaKeysV2
       if (isConfigJSON) {
         let config = JSON.parse(
-          await isConfigJSON.async('text') || '{}'
+          await isConfigJSON?.async('text') || '{}'
         )
 
         // Mechvibes check
