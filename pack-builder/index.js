@@ -8,8 +8,6 @@
 import JSZip from 'jszip'
 import YAML from 'yaml'
 
-//import { createFFmpeg } from '@ffmpeg/ffmpeg';
-
 let loadZip = async (file) => {
   let zip = await JSZip
     .loadAsync(file)
@@ -63,6 +61,16 @@ Pack_Detection : {
   }
 }
 
+export let EE = {
+  registered: [],
+  emit: (v)=> {
+    EE.registered.forEach(fn=>fn(v))
+  },
+  on: (fn) => {
+    EE.registered.push(fn)
+  }
+}
+
 let spHash, parseVibes, parseModelm, parseMechaKeysLegacy;
 Parse_Packs: {
   spHash = (ogName, spData) => {
@@ -73,30 +81,21 @@ Parse_Packs: {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
   }
 
-  let ffmpegRun = (ffmpeg, source, start, duration, outFile) => {
-    return new Promise(async (resolve, reject) => {
-      ffmpeg.run(
-        '-i', source,
-        '-ss', start,
-        '-t', duration,
-        '-c', 'copy',
-        outFile,
-        '-y'
-      ).then(_=>{
-        resolve(true)
-      })
-      .catch(err=>{
-        reject(err.message)
-      })
-    })
-  }
+  let ffmpegRun = (ffmpeg, source, start, duration, outFile) => new Promise(
+    async (resolve, reject) => ffmpeg.run(
+      '-i', source,
+      '-ss', start,
+      '-t', duration,
+      '-c', 'copy',
+      outFile,
+      '-y'
+    ) 
+    .then(_=>resolve(true))
+    .catch(err=>reject(err.message))
+  )
 
-  function sleep(delay) {
-    var start = new Date().getTime();
-    while (new Date().getTime() < start + delay);
-}
-const delay = ms => new Promise(res => setTimeout(res, ms));
 
+  EE.on(([count, len])=>console.log(count, len))
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
 
@@ -111,40 +110,27 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
       // Load source sound
       let pattern = new RegExp(`.*/${escapeRegExp(sound)}$`)
       let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
-     
       let ext = sound.split('.').pop()
+
+      let [count, len] = [0, Object.entries(defines).length]
       for(let [keyCode, timeData] of Object.entries(defines)) {
         if (!timeData) continue
         let [start, duration] = timeData.map(v=>''+v/1e3)
 
         let outFile = `${keyCode}.${ext}`
 
-        console.log(outFile)
+        let data;
         await ffmpeg.load().then(async _=>{
           await ffmpeg.FS('writeFile', sound, sourceSound);
           await ffmpegRun(ffmpeg, sound, start, duration, outFile).catch(err=>console.log(err));
+          data = await ffmpeg.FS('readFile', outFile);
+          await ffmpeg.exit()
         })
 
-        const data = await ffmpeg.FS('readFile', outFile);
-        new Blob([data.buffer], { type: 'video/mp4' })
-        console.log(data)
-
-        await ffmpeg.exit()
-
-/* 
-        ffmpeg.FS('writeFile', name, await fetchFile(files[0]));
-
-        
-
-        console.log(start, duration)
-        console.log(`\
-          ffmpeg \
-          -i "${config.sound}" \
-          -ss ${start} \
-          -t ${duration} \
-          -c copy "${keyCode}.${ext}" \
-          -y\
-        `.replaceAll(/\s+/g, ' ')) */
+        let blobAudio = new Blob([data.buffer], { type: `audio/${ext}` })
+        console.log(blobAudio)
+         
+        EE.emit([count+=1, len])
       }
     } else {
       pack.name = name

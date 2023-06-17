@@ -2,7 +2,7 @@
   import { useDropZone } from '@vueuse/core'
   import { useFileDialog } from '@vueuse/core'
 
-  import {handleUpload} from 'pack-builder'
+  import {handleUpload, EE} from 'pack-builder'
   
   const { onChange, open } = useFileDialog()
   onChange(handleUpload)
@@ -20,6 +20,12 @@
     */
   }
 
+  let progress = ref(0)
+
+  EE.on(([count, total])=>{
+    progress.value = 100 * count / total | 0
+  })
+
   const { isOverDropZone } = useDropZone(dropZoneRef, onDrop)
 
 </script>
@@ -36,7 +42,7 @@
       type="url" 
       placeholder="https://example.com/thing.(zip|mp3|wav)"
       pattern="https://.*"
-    >
+    > {{ progress }}%
   </div>
 </template>
 
