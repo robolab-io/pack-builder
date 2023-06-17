@@ -9,9 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ffmpeg/core": "^0.11.0",
-    "@ffmpeg/ffmpeg": "^0.11.6",
     "@vueuse/core": "^10.1.2",
+    "ffmpeg.js": "^4.2.9003",
     "jszip": "^3.10.1",
     "pack-builder": "file:pack-builder",
     "vue": "^3.2.47",

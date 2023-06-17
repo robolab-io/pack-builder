@@ -7,8 +7,7 @@
 */
 import JSZip from 'jszip'
 import YAML from 'yaml'
-
-//import { createFFmpeg } from '@ffmpeg/ffmpeg';
+import ffmpeg from "ffmpeg.js";
 
 let loadZip = async (file) => {
   let zip = await JSZip
@@ -73,41 +72,10 @@ Parse_Packs: {
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
   }
 
-  let ffmpegRun = (ffmpeg, source, start, duration, outFile) => {
-    return new Promise(async (resolve, reject) => {
-      ffmpeg.run(
-        '-i', source,
-        '-ss', start,
-        '-t', duration,
-        '-c', 'copy',
-        outFile,
-        '-y'
-      ).then(_=>{
-        resolve(true)
-      })
-      .catch(err=>{
-        reject(err.message)
-      })
-    })
-  }
-
-  function sleep(delay) {
-    var start = new Date().getTime();
-    while (new Date().getTime() < start + delay);
-}
-const delay = ms => new Promise(res => setTimeout(res, ms));
-
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
 
     if(key_define_type === 'single') {
-      // init FFmpeg
-      let FFmpeg = await import('https://esm.sh/@ffmpeg/ffmpeg')
-      const ffmpeg = FFmpeg.createFFmpeg({
-        mainName: 'main',
-        corePath: 'https://unpkg.com/@ffmpeg/core-st/dist/ffmpeg-core.js'
-      });
-
       // Load source sound
       let pattern = new RegExp(`.*/${escapeRegExp(sound)}$`)
       let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
@@ -119,32 +87,25 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
 
         let outFile = `${keyCode}.${ext}`
 
-        console.log(outFile)
-        await ffmpeg.load().then(async _=>{
-          await ffmpeg.FS('writeFile', sound, sourceSound);
-          await ffmpegRun(ffmpeg, sound, start, duration, outFile).catch(err=>console.log(err));
+        let result = ffmpeg({
+          MEMFS: [{name: sound, data: sourceSound}],
+          arguments: [
+            '-i', sound,
+            '-ss', start,
+            '-t', duration,
+            '-c', 'copy',
+            outFile,
+            '-y'
+          ],
+          printErr: ()=>{}, // hmmm
         })
+        const out = result.MEMFS[0].data;
+        let blobThing = new Blob([out], {type: 'audio/ogg'})
+        console.log(out)
 
-        const data = await ffmpeg.FS('readFile', outFile);
-        new Blob([data.buffer], { type: 'video/mp4' })
-        console.log(data)
-
-        await ffmpeg.exit()
-
-/* 
-        ffmpeg.FS('writeFile', name, await fetchFile(files[0]));
-
-        
-
-        console.log(start, duration)
-        console.log(`\
-          ffmpeg \
-          -i "${config.sound}" \
-          -ss ${start} \
-          -t ${duration} \
-          -c copy "${keyCode}.${ext}" \
-          -y\
-        `.replaceAll(/\s+/g, ' ')) */
+        let audio = document.createElement("audio");
+        audio.src = URL.createObjectURL(blobThing);
+        await audio.play();
       }
     } else {
       pack.name = name
