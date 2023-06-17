@@ -241,7 +241,7 @@ export async function handleUpload(files) {
       let isConfigJSON = getConfigJSON(zip)
       let isMechaKeysLegacy = checkMechaKeysLegacy(zip)
     
-      // Modelm
+      // ModelM
       if (isConfigYAML) {
         let config = YAML.parse(
           await isConfigYAML?.async('text') || ''
