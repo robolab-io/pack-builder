@@ -123,65 +123,55 @@ Parse_Packs: {
     return pack
   }
 
+  let genModelMSoundArr = async (arr, zip, pack) => {
+    let SoundArr = []
+    for (let fileName of arr??[]) {
+      let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
+      let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
+      if (!audioBlob) return
+
+      let hashName = spHash(fileName, audioBlob)
+      pack.soundNames[hashName] = {
+        name: fileName,
+        blob: audioBlob
+      }
+      SoundArr.push(hashName)
+    }
+    return SoundArr
+  }
+
+  let resolveModelMKey = (regex, groupIndex) => {
+    if (regex === '\\d+') {
+      return 'default'
+    } 
+    if (Number(regex)) {
+      return Number(regex)
+    }
+    if (/^(\d+\|)*\d+$/.test(regex)) { // ex: "1|34|680|421|543"
+      let keyMatch = 'group_'+groupIndex.count
+      pack.groups[keyMatch] = regex.split('|').map(Number)
+      groupIndex.count++
+      return Key_Match
+    }
+    // last resort is to just keep as regex
+    return `/${regex}/`
+  }
+
   parseModelm = async (zip, config, pack, zipName) => {
     let name = zipName.split('.')[0]
     pack.name = name
-    let groupIndex = 0
+    let groupIndex = {count: 0}
+
     for (let obj of config.switches) {
 
-      let keyMatch;
-      Key_Match : {
-        if (obj.keycode_regex === '\\d+') {
-          keyMatch = 'default'; break Key_Match
-        } 
-        if (Number(obj.keycode_regex)) {
-          keyMatch = Number(obj.keycode_regex); break Key_Match
-        }
-        if (/^(\d+\|)*\d+$/.test(obj.keycode_regex)) { // ex: "1|34|680|421|543"
-          let keyMatch = 'group_'+groupIndex
-          pack.groups[keyMatch] = obj.keycode_regex.split('|').map(Number)
-          groupIndex++
-          break Key_Match
-        }
-        // last resort is to just keep as regex
-        keyMatch = `/${obj.keycode_regex}/`
-      }
+      let keyMatch = resolveModelMKey(obj.keycode_regex, groupIndex)
 
-      let downSoundArr = []
-      for (let fileName of obj.keydown_paths??[]) {
-        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
-        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
-        if (!audioBlob) return
-
-        let hashName = spHash(fileName, audioBlob)
-        pack.soundNames[hashName] = {
-          name: fileName,
-          blob: audioBlob
-        }
-        downSoundArr.push(hashName)
-      }
-
-      let upSoundArr = []
-      for (let fileName of obj.keyup_paths??[]) {
-        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
-        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
-        if (!audioBlob) return
-
-        let hashName = spHash(fileName, audioBlob)
-        pack.soundNames[hashName] = {
-          name: fileName,
-          blob: audioBlob
-        }
-        downSoundArr.push(hashName)
-      }
+      let downSoundArr = genModelMSoundArr(obj.keydown_paths, zip, pack)
+      let upSoundArr = genModelMSoundArr(obj.keyup_paths, zip, pack)
 
       pack.assignment[keyMatch] = {
-        'down': [{              
-          sounds: downSoundArr          
-        }],
-        'up': [{
-          sounds: upSoundArr        
-        }]
+        down: [{ sounds: downSoundArr }],
+        up: [{ sounds: upSoundArr }]
       }
     }
 
