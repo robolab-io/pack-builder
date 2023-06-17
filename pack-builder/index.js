@@ -123,52 +123,72 @@ Parse_Packs: {
     return pack
   }
 
-  parseModelm = async (zip, config, pack) => {
-    let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
+  parseModelm = async (zip, config, pack, zipName) => {
+    let name = zipName.split('.')[0]
+    pack.name = name
+    let groupIndex = 0
+    for (let obj of config.switches) {
 
-    if(key_define_type === 'single') {
-      console.log('wasm ffmpeg pack fixer required.\nUse on the given sound file:', sound)
-    } else {
-      pack.name = name
+      let keyMatch;
+      Key_Match : {
+        if (obj.keycode_regex === '\\d+') {
+          keyMatch = 'default'; break Key_Match
+        } 
+        if (Number(obj.keycode_regex)) {
+          keyMatch = Number(obj.keycode_regex); break Key_Match
+        }
+        if (/^(\d+\|)*\d+$/.test(obj.keycode_regex)) { // ex: "1|34|680|421|543"
+          let keyMatch = 'group_'+groupIndex
+          pack.groups[keyMatch] = obj.keycode_regex.split('|').map(Number)
+          groupIndex++
+          break Key_Match
+        }
+        // last resort is to just keep as regex
+        keyMatch = `/${obj.keycode_regex}/`
+      }
 
-      for (let [keyCode, fileName] of Object.entries(defines)) {
-        if (!fileName) continue 
-
+      let downSoundArr = []
+      for (let fileName of obj.keydown_paths??[]) {
         let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
         let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
-        if (!audioBlob) continue
+        if (!audioBlob) return
 
         let hashName = spHash(fileName, audioBlob)
         pack.soundNames[hashName] = {
           name: fileName,
           blob: audioBlob
         }
+        downSoundArr.push(hashName)
+      }
 
-        let pressDir;
-        if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
-          pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
-          keyCode = 'M'+Number(keyCode)
-        } else {
-          pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
-          keyCode = Number(keyCode)
+      let upSoundArr = []
+      for (let fileName of obj.keyup_paths??[]) {
+        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
+        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
+        if (!audioBlob) return
+
+        let hashName = spHash(fileName, audioBlob)
+        pack.soundNames[hashName] = {
+          name: fileName,
+          blob: audioBlob
         }
+        downSoundArr.push(hashName)
+      }
 
-        //how should i differentiate mouse vs keyboard keycodes?
-
-        pack.assignment[keyCode] = {     // create obj if it doesn't exist
-          ...pack.assignment?.[keyCode], // re-inherit if it did
-          [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
-            sounds: [hashName]
-            //conditions, mods, and mixers for this sound set would go here
-          }]
-        }
+      pack.assignment[keyMatch] = {
+        'down': [{              
+          sounds: downSoundArr          
+        }],
+        'up': [{
+          sounds: upSoundArr        
+        }]
       }
     }
 
     pack.metaData.push({
       association: 'PackImport',
-      sourcePack: isPP ? 'MechVibesPlusPlus' : 'MechVibes',
-      id, name, key_define_type, includes_numpad
+      sourcePack: 'ModelM',
+      name
     })
 
     console.log(pack)
@@ -238,8 +258,7 @@ export async function handleUpload(files) {
         ) ?? {switches: []} 
         // i should prob throw an error instead of pretending its an empty pack
 
-        console.log('Modelm')
-        return parseModelm(zip, config, pack)
+        return parseModelm(zip, config, pack, file.name)
       }
     
       // Mechvibes || MechvibesPP || MechaKeysV2
