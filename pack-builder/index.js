@@ -7,6 +7,7 @@
 */
 import JSZip from 'jszip'
 import YAML from 'yaml'
+import ffmpeg from "ffmpeg.js";
 
 let loadZip = async (file) => {
   let zip = await JSZip
@@ -75,7 +76,37 @@ Parse_Packs: {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
 
     if(key_define_type === 'single') {
-      console.log('wasm ffmpeg pack fixer required.\nUse on the given sound file:', sound)
+      // Load source sound
+      let pattern = new RegExp(`.*/${escapeRegExp(sound)}$`)
+      let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
+     
+      let ext = sound.split('.').pop()
+      for(let [keyCode, timeData] of Object.entries(defines)) {
+        if (!timeData) continue
+        let [start, duration] = timeData.map(v=>''+v/1e3)
+
+        let outFile = `${keyCode}.${ext}`
+
+        let result = ffmpeg({
+          MEMFS: [{name: sound, data: sourceSound}],
+          arguments: [
+            '-i', sound,
+            '-ss', start,
+            '-t', duration,
+            '-c', 'copy',
+            outFile,
+            '-y'
+          ],
+          printErr: ()=>{}, // hmmm
+        })
+        const out = result.MEMFS[0].data;
+        let blobThing = new Blob([out], {type: 'audio/ogg'})
+        console.log(out)
+
+        let audio = document.createElement("audio");
+        audio.src = URL.createObjectURL(blobThing);
+        await audio.play();
+      }
     } else {
       pack.name = name
 
