@@ -8,6 +8,10 @@
 import JSZip from 'jszip'
 import YAML from 'yaml'
 
+import {createFFmpeg} from "@ffmpeg.wasm/main";
+// https://github.com/DreamOfIce/ffmpeg.wasm#about-this-fork
+// https://github.com/ffmpegwasm/ffmpeg.wasm-core/pull/21#issuecomment-1494658816
+
 let loadZip = async (file) => {
   let zip = await JSZip
     .loadAsync(file)
@@ -105,17 +109,18 @@ Parse_Packs: {
     let virtualDir = {}
 
     if(key_define_type === 'single') {
-      // init FFmpeg
-      let FFmpeg = await import('https://esm.sh/@ffmpeg/ffmpeg')
-      const ffmpeg = FFmpeg.createFFmpeg({
-        mainName: 'main',
-        corePath: 'https://unpkg.com/@ffmpeg/core-st/dist/ffmpeg-core.js'
-      });
-
       // Load source sound
       let pattern = new RegExp(`.*/${escapeRegExp(sound)}$`)
       let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
       let ext = sound.split('.').pop()
+
+      // init FFmpeg
+      const ffmpeg = await createFFmpeg({
+        mainName: 'main',
+        corePath: 'https://unpkg.com/@ffmpeg/core-st/dist/ffmpeg-core.js'
+      });
+      await ffmpeg.load()
+      await ffmpeg.FS('writeFile', sound, sourceSound)
 
       let [count, len] = [0, Object.entries(defines).length]
       for(let [keyCode, timeData] of Object.entries(defines)) {
@@ -125,12 +130,8 @@ Parse_Packs: {
         let outFile = `${keyCode}.${ext}`
 
         let data;
-        await ffmpeg.load().then(async _=>{
-          await ffmpeg.FS('writeFile', sound, sourceSound);
-          await ffmpegRun(ffmpeg, sound, start, duration, outFile).catch(err=>console.log(err));
-          data = await ffmpeg.FS('readFile', outFile);
-          await ffmpeg.exit()
-        })
+        await ffmpegRun(ffmpeg, sound, start, duration, outFile).catch(err=>console.log(err))
+        data = await ffmpeg.FS('readFile', outFile)
 
         let blobAudio = new Blob([data.buffer], { type: `audio/${ext}` })
 
@@ -142,6 +143,7 @@ Parse_Packs: {
          
         EE.emit([count+=1, len])
       }
+      await ffmpeg.exit()
     }
 
     pack.name = name
