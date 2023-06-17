@@ -61,7 +61,7 @@ Pack_Detection : {
   }
 }
 
-let spHash, parseVibes, parseModelm;
+let spHash, parseVibes, parseModelm, parseMechaKeysLegacy;
 Parse_Packs: {
   spHash = (ogName, spData) => {
     return ogName + '_fakehash' //hash spData
@@ -157,8 +157,8 @@ Parse_Packs: {
     return `/${regex}/`
   }
 
-  parseModelm = async (zip, config, pack, zipName) => {
-    let name = zipName.split('.')[0]
+  parseModelm = async (zip, config, pack) => {
+    let name = getPackName(zip)
     pack.name = name
     let groupIndex = {count: 0}
 
@@ -178,6 +178,71 @@ Parse_Packs: {
     pack.metaData.push({
       association: 'PackImport',
       sourcePack: 'ModelM',
+      name
+    })
+
+    console.log(pack)
+    return pack
+  }
+
+  let getPackName = (zip)=>Object.keys(zip.files)[0].split('/')[0]
+
+  let extendGroupsForLegacy = (groups) => {
+    groups.space = [57]
+    groups.enter = [28]
+    groups.alt   = [56]
+    groups.alpha = ['default']  
+    // hmmm, can I alias default?
+
+    groups.left  = ['M1']
+    groups.right = ['M2']
+    groups.middle= ['M3']
+    // 'Mdefault' should there be a mouse default?
+    // group.Mdefault = ['M1', 'M2', 'M3'] // ?
+  }
+
+  let genMKLSoundArr = async (zip, pack, group, dir) => {
+    let SoundArr = []
+    let pattern = new RegExp(`.*/${group}/${dir}`)
+
+    for(let f of zip.file(pattern)) {
+      let name = f.name.split('/').pop()
+      let blob = await f?.async?.("blob")
+      let hashName = await spHash(name, blob)
+
+      pack.soundNames[hashName] = { name, blob }
+      SoundArr.push(hashName)
+    }
+
+    return SoundArr
+  }
+
+  let parseByGroupMLK = async (groupArr, zip, pack) => {
+    for(let group of groupArr) {
+      let gName = group==='alpha' ? 'default' : group
+      pack.assignment[gName] = {
+        down: [{ sounds: await genMKLSoundArr(zip, pack, group, 'down') }],
+        up: [{ sounds: await genMKLSoundArr(zip, pack, group, 'up') }]
+      }
+    }
+  }
+
+  parseMechaKeysLegacy = async (zip, packType, pack) => {
+    let name = getPackName(zip)
+    pack.name = name
+
+    extendGroupsForLegacy(pack.groups)
+
+    if (packType.isKeyPack) {
+      parseByGroupMLK(['space', 'enter', 'alt', 'alpha'], zip, pack)
+    }
+    if (packType.isMousePack) {
+      parseByGroupMLK(['left', 'right', 'middle'], zip, pack)
+    }
+    
+    pack.metaData.push({
+      association: 'PackImport',
+      sourcePack: 'MechaKeys Legacy',
       name
     })
 
@@ -249,7 +314,7 @@ export async function handleUpload(files) {
         // i should prob throw an error instead of pretending its an empty pack
 
         console.log('ModelM')
-        return parseModelm(zip, config, pack, file.name)
+        return parseModelm(zip, config, pack)
       }
     
       // Mechvibes || MechvibesPP || MechaKeysV2
@@ -277,7 +342,8 @@ export async function handleUpload(files) {
     
       // MechaKeys
       if (Object.values(isMechaKeysLegacy).some(k=>k)) {
-        return console.log('MechaKeys Legacy', isMechaKeysLegacy)
+        console.log('MechaKeys Legacy', isMechaKeysLegacy)
+        return parseMechaKeysLegacy(zip, isMechaKeysLegacy, pack)
       }
     
       return console.warn('failed to identify zip pack')
