@@ -98,6 +98,7 @@ Parse_Packs: {
   EE.on(([count, len])=>console.log(count, len))
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
+    let virtualDir = {}
 
     if(key_define_type === 'single') {
       // init FFmpeg
@@ -129,45 +130,59 @@ Parse_Packs: {
 
         let blobAudio = new Blob([data.buffer], { type: `audio/${ext}` })
         console.log(blobAudio)
+
+        virtualDir[timeData[0]] = { 
+          // this way we don't get redundant sound files for reuse
+          name: `${timeData[0]}.${ext}`, // not a very helpful name... could concat keyCodes
+          value: blobAudio
+        }
          
         EE.emit([count+=1, len])
       }
-    } else {
-      pack.name = name
+    }
 
-      for (let [keyCode, fileName] of Object.entries(defines)) {
-        if (!fileName) continue 
+    pack.name = name
+    for (let [keyCode, assignedVal] of Object.entries(defines)) {
+      if (!assignedVal) continue
 
+      let audioBlob, fileName;
+      if(key_define_type === 'single') {
+        let {name, value} = virtualDir[assignedVal[0]]
+        fileName = name
+        audioBlob = value
+      } else {
+        fileName = assignedVal
         let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
-        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
-        if (!audioBlob) continue
+        audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
+      }
+      if (!audioBlob) continue
 
-        let hashName = spHash(fileName, audioBlob)
-        pack.soundNames[hashName] = {
-          name: fileName,
-          blob: audioBlob
-        }
+      let hashName = spHash(fileName, audioBlob)
+      pack.soundNames[hashName] = {
+        name: fileName,
+        blob: audioBlob
+      }
 
-        let pressDir;
-        if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
-          pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
-          keyCode = 'M'+Number(keyCode)
-        } else {
-          pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
-          keyCode = Number(keyCode)
-        }
+      let pressDir;
+      if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
+        pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
+        keyCode = 'M'+Number(keyCode)
+      } else {
+        pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
+        keyCode = Number(keyCode)
+      }
 
-        //how should i differentiate mouse vs keyboard keycodes?
+      //how should i differentiate mouse vs keyboard keycodes?
 
-        pack.assignment[keyCode] = {     // create obj if it doesn't exist
-          ...pack.assignment?.[keyCode], // re-inherit if it did
-          [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
-            sounds: [hashName]
-            //conditions, mods, and mixers for this sound set would go here
-          }]
-        }
+      pack.assignment[keyCode] = {     // create obj if it doesn't exist
+        ...pack.assignment?.[keyCode], // re-inherit if it did
+        [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
+          sounds: [hashName]
+          //conditions, mods, and mixers for this sound set would go here
+        }]
       }
     }
+    
 
     pack.metaData.push({
       association: 'PackImport',
