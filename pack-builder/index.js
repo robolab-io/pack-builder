@@ -113,7 +113,7 @@ const delay = ms => new Promise(res => setTimeout(res, ms));
       let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
      
       let ext = sound.split('.').pop()
-      for(let [keyCode, timeData] of Object.entries(defines).slice(1)) {
+      for(let [keyCode, timeData] of Object.entries(defines)) {
         if (!timeData) continue
         let [start, duration] = timeData.map(v=>''+v/1e3)
 
