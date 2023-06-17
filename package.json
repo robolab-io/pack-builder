@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ffmpeg.wasm/main": "^0.12.0",
     "@vueuse/core": "^10.1.2",
     "jszip": "^3.10.1",
     "pack-builder": "file:pack-builder",
