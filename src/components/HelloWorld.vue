@@ -20,10 +20,11 @@
     */
   }
 
-  let progress = ref(0)
+  let progress = ref('')
 
-  EE.on(([count, total])=>{
-    progress.value = 100 * count / total | 0
+  EE.on(([status,count, total])=>{
+    if(!status) progress.value = 'Loading Library'
+    progress.value = 'Transform: ' + (100 * count / total | 0) + '%'
   })
 
   const { isOverDropZone } = useDropZone(dropZoneRef, onDrop)
@@ -42,7 +43,7 @@
       type="url" 
       placeholder="https://example.com/thing.(zip|mp3|wav)"
       pattern="https://.*"
-    > {{ progress }}%
+    > {{ progress }}
   </div>
 </template>
 

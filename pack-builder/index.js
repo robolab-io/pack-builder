@@ -99,8 +99,9 @@ Parse_Packs: {
   )
 
 
-  EE.on(([count, len])=>{
-    if(count%5) return
+  EE.on(([status, count, len])=>{
+    if(!status) console.log('Loading Library')
+    if(count%10 && count!==len ) return
     console.clear()
     console.log((100*count/len|0)+'%')
   })
@@ -119,6 +120,7 @@ Parse_Packs: {
         mainName: 'main',
         corePath: 'https://unpkg.com/@ffmpeg/core-st/dist/ffmpeg-core.js'
       });
+      EE.emit([false, 0, 1])
       await ffmpeg.load()
       await ffmpeg.FS('writeFile', sound, sourceSound)
 
@@ -129,9 +131,8 @@ Parse_Packs: {
 
         let outFile = `${keyCode}.${ext}`
 
-        let data;
         await ffmpegRun(ffmpeg, sound, start, duration, outFile).catch(err=>console.log(err))
-        data = await ffmpeg.FS('readFile', outFile)
+        let data = await ffmpeg.FS('readFile', outFile)
 
         let blobAudio = new Blob([data.buffer], { type: `audio/${ext}` })
 
@@ -141,7 +142,7 @@ Parse_Packs: {
           value: blobAudio
         }
          
-        EE.emit([count+=1, len])
+        EE.emit([true, count+=1, len])
       }
       await ffmpeg.exit()
     }
