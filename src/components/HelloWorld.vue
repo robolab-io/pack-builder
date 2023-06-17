@@ -2,15 +2,31 @@
   import { useDropZone } from '@vueuse/core'
   import { useFileDialog } from '@vueuse/core'
 
-  import {handleUpload} from 'pack-builder'
+  //import {handleUpload} from 'pack-builder'
   
   const { onChange, open } = useFileDialog()
-  onChange(handleUpload)
+  //onChange(handleUpload)
 
   const dropZoneRef = ref()
 
+  let packState = ref({})
+  let progress = ref(0)
+
   async function onDrop(files) {
-    await handleUpload(files)
+    const worker = new Worker("pack-builder/worker", { type: "module" });
+
+    worker.postMessage(files)
+    worker.onmessage = e => {
+      let [channel, data] = e.data
+      if (channel==='result') {
+        packState.value = data
+      }
+      if (channel==='progress') {
+        progress.value = data
+      }
+    }
+
+    //await handleUpload(files)
     /*
       type: "application/json" //json
       type: "" // .mecha
@@ -37,6 +53,8 @@
       placeholder="https://example.com/thing.(zip|mp3|wav)"
       pattern="https://.*"
     >
+    {{ packState }}
+    {{ progress }}
   </div>
 </template>
 

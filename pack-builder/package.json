@@ -8,5 +8,11 @@
     "jszip": "^3.10.1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  ".": {
+    "default": "./index.js"
+  },
+  "./worker": {
+    "default": "./worker.js"
+  }
 }

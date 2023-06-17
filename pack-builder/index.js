@@ -166,8 +166,8 @@ Parse_Packs: {
 
       let keyMatch = resolveModelMKey(obj.keycode_regex, groupIndex)
 
-      let downSoundArr = genModelMSoundArr(obj.keydown_paths, zip, pack)
-      let upSoundArr = genModelMSoundArr(obj.keyup_paths, zip, pack)
+      let downSoundArr = await genModelMSoundArr(obj.keydown_paths, zip, pack)
+      let upSoundArr = await genModelMSoundArr(obj.keyup_paths, zip, pack)
 
       pack.assignment[keyMatch] = {
         down: [{ sounds: downSoundArr }],
