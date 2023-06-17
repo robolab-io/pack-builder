@@ -248,6 +248,7 @@ export async function handleUpload(files) {
         ) ?? {switches: []} 
         // i should prob throw an error instead of pretending its an empty pack
 
+        console.log('ModelM')
         return parseModelm(zip, config, pack, file.name)
       }
     
