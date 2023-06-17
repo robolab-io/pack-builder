@@ -95,7 +95,11 @@ Parse_Packs: {
   )
 
 
-  EE.on(([count, len])=>console.log(count, len))
+  EE.on(([count, len])=>{
+    if(count%5) return
+    console.clear()
+    console.log((100*count/len|0)+'%')
+  })
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
     let virtualDir = {}
@@ -129,7 +133,6 @@ Parse_Packs: {
         })
 
         let blobAudio = new Blob([data.buffer], { type: `audio/${ext}` })
-        console.log(blobAudio)
 
         virtualDir[timeData[0]] = { 
           // this way we don't get redundant sound files for reuse
