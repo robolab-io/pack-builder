@@ -8,7 +8,8 @@
 import JSZip from 'jszip'
 import YAML from 'yaml'
 import ffmpeg from "ffmpeg.js";
-import EventEmitter from 'events'
+import ffmpegWW from "ffmpeg.js/ffmpeg-worker-webm";
+//import EventEmitter from 'events'
 
 let loadZip = async (file) => {
   let zip = await JSZip
@@ -63,7 +64,8 @@ Pack_Detection : {
   }
 }
 
-let spHash, parseVibes, parseModelm, parseMechaKeysLegacy, ffmpegProgress, EE;
+export let EE = {on: ()=>{} }// new EventEmitter();
+let spHash, parseVibes, parseModelm, parseMechaKeysLegacy, ffmpegProgress;
 Parse_Packs: {
   spHash = (ogName, spData) => {
     return ogName + '_fakehash' //hash spData
@@ -74,13 +76,18 @@ Parse_Packs: {
   }
 
   ffmpegProgress = { value: 0 }
-  EE = new EventEmitter()
-  EE.on('ffmpeg-update', function (progressArr) {
+  /* EE.on('ffmpeg-update', function (progressArr) {
     let [progress, total] = progressArr
     if (progress%20 && progress!==total) return
     console.clear();
     console.log(`Progress: ${100 * progress/total | 0}%`)
-  })
+  }) */
+
+  function sleep(delay) {
+    var start = new Date().getTime();
+    while (new Date().getTime() < start + delay);
+}
+const delay = ms => new Promise(res => setTimeout(res, ms));
 
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
@@ -91,6 +98,8 @@ Parse_Packs: {
       let pattern = new RegExp(`.*/${escapeRegExp(sound)}$`)
       let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
 
+      //const worker = new Worker(ffmpegWW);
+
       ffmpegProgress.value = 0
       let len = Object.entries(defines).length
       let ext = sound.split('.').pop()
@@ -100,20 +109,32 @@ Parse_Packs: {
 
         let outFile = `${keyCode}.${ext}`
 
-        let result = ffmpeg({
-          MEMFS: [{name: sound, data: sourceSound}],
-          arguments: [
-            '-i', sound,
-            '-ss', start,
-            '-t', duration,
-            '-c', 'copy',
-            outFile,
-            '-y'
-          ],
-          printErr: ()=>{}, // hmmm
-        })
-        const out = result.MEMFS[0].data;
-        let blobThing = new Blob([out], {type: `audio/${ext}`})
+        await sleep(10)
+
+        /* let result;
+        worker.onmessage = function(e) {
+          const msg = e.data;
+          if (msg.type === "ready") {
+            worker.postMessage({
+              MEMFS: [{name: sound, data: sourceSound}],
+              arguments: [
+                '-i', sound,
+                '-ss', start,
+                '-t', duration,
+                '-c', 'copy',
+                outFile,
+                '-y'
+              ],
+              printErr: ()=>{}, // hmmm
+            });
+          }
+          if (msg.type === "done") {
+            result = msg.data
+          }
+        };
+        console.log(result)
+        const out = result.MEMFS[0].data; */
+        let blobThing = '' ///new Blob([out], {type: `audio/${ext}`})
 
         virtualDir[timeData[0]] = { 
           // this way we don't get redundant sound files for reuse
@@ -121,8 +142,9 @@ Parse_Packs: {
           value: blobThing
         }
 
-        EE.emit('ffmpeg-update', [ffmpegProgress.value+=1, len])
+        //EE.emit('ffmpeg-update', [ffmpegProgress.value+=1, len])
       }
+      // worker.terminate();
     }
 
     pack.name = name
