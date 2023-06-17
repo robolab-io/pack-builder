@@ -100,8 +100,7 @@ Parse_Packs: {
           printErr: ()=>{}, // hmmm
         })
         const out = result.MEMFS[0].data;
-        let blobThing = new Blob([out], {type: 'audio/ogg'})
-        console.log(out)
+        let blobThing = new Blob([out], {type: `audio/${ext}`})
 
         let audio = document.createElement("audio");
         audio.src = URL.createObjectURL(blobThing);
