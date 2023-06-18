@@ -3,6 +3,7 @@
   import { useFileDialog } from '@vueuse/core'
 
   function handleUpload(files) {
+    console.log('hit1', files)
     const worker = new Worker("pack-builder/worker", { type: "module" });
 
     worker.postMessage(files)
