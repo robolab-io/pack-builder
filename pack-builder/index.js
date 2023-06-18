@@ -7,6 +7,8 @@
 */
 import JSZip from 'jszip'
 import YAML from 'yaml'
+import ffmpeg from "ffmpeg.js";
+import EventEmitter from 'events'
 
 let loadZip = async (file) => {
   let zip = await JSZip
@@ -61,6 +63,19 @@ Pack_Detection : {
   }
 }
 
+export let EE = new EventEmitter()
+
+export let test = (fn)=>{
+  EE.on('ffmpeg-update', fn)
+}
+/*EE.on('ffmpeg-update', function (progressArr) {
+  console.log('ROOO', progressArr)
+  let [progress, total] = progressArr
+  if (progress%20 && progress!==total) return
+  console.clear();
+  console.log(`Progress: ${100 * progress/total | 0}%`)
+})*/
+
 let spHash, parseVibes, parseModelm, parseMechaKeysLegacy;
 Parse_Packs: {
   spHash = (ogName, spData) => {
@@ -73,45 +88,90 @@ Parse_Packs: {
 
   parseVibes = async (zip, config, pack) => {
     let {id, name, key_define_type, includes_numpad, sound, defines, isPP} = config
+    let virtualDir = {}
 
     if(key_define_type === 'single') {
-      console.log('wasm ffmpeg pack fixer required.\nUse on the given sound file:', sound)
-    } else {
-      pack.name = name
+      // Load source sound
+      let pattern = new RegExp(`.*/${escapeRegExp(sound)}$`)
+      let sourceSound = await zip.file(pattern)?.[0]?.async?.("uint8array")
+      let ext = sound.split('.').pop()
 
-      for (let [keyCode, fileName] of Object.entries(defines)) {
-        if (!fileName) continue 
+      let [progress, len] = [0, Object.entries(defines).length]
+      EE.emit('ffmpeg-update', [0, 1])
+      
+      for(let [keyCode, timeData] of Object.entries(defines)) {
+        if (!timeData) continue
+        let [start, duration] = timeData.map(v=>''+v/1e3)
 
-        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
-        let audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
-        if (!audioBlob) continue
+        let outFile = `${keyCode}.${ext}`
 
-        let hashName = spHash(fileName, audioBlob)
-        pack.soundNames[hashName] = {
-          name: fileName,
-          blob: audioBlob
+        let result = ffmpeg({
+          MEMFS: [{name: sound, data: sourceSound}],
+          arguments: [
+            '-i', sound,
+            '-ss', start,
+            '-t', duration,
+            '-c', 'copy',
+            outFile,
+            '-y'
+          ],
+          printErr: ()=>{}, // hmmm
+        })
+        const out = result.MEMFS[0].data;
+        let blobThing = new Blob([out], {type: `audio/${ext}`})
+
+        virtualDir[timeData[0]] = { 
+          // this way we don't get redundant sound files for reuse
+          name: `${timeData[0]}.${ext}`, // not a very helpful name... could concat keyCodes
+          value: blobThing
         }
 
-        let pressDir;
-        if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
-          pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
-          keyCode = 'M'+Number(keyCode)
-        } else {
-          pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
-          keyCode = Number(keyCode)
-        }
-
-        //how should i differentiate mouse vs keyboard keycodes?
-
-        pack.assignment[keyCode] = {     // create obj if it doesn't exist
-          ...pack.assignment?.[keyCode], // re-inherit if it did
-          [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
-            sounds: [hashName]
-            //conditions, mods, and mixers for this sound set would go here
-          }]
-        }
+        EE.emit('ffmpeg-update', [progress+=1, len])
       }
     }
+
+    pack.name = name
+    for (let [keyCode, assignedVal] of Object.entries(defines)) {
+      if (!assignedVal) continue
+
+      let audioBlob, fileName;
+      if(key_define_type === 'single') {
+        let {name, value} = virtualDir[assignedVal[0]]
+        fileName = name
+        audioBlob = value
+      } else {
+        fileName = assignedVal
+        let pattern = new RegExp(`.*/${escapeRegExp(fileName)}$`)
+        audioBlob = await zip.file(pattern)?.[0]?.async?.("blob")
+      }
+      if (!audioBlob) continue
+
+      let hashName = spHash(fileName, audioBlob)
+      pack.soundNames[hashName] = {
+        name: fileName,
+        blob: audioBlob
+      }
+
+      let pressDir;
+      if (config.isMouse) { // number of 0's prefixed is not uniform for mouse and keys
+        pressDir = /^0[1-3]/.test(keyCode) ? 'up' : 'down'
+        keyCode = 'M'+Number(keyCode)
+      } else {
+        pressDir = /^00[1-9]/.test(keyCode) ? 'up' : 'down'
+        keyCode = Number(keyCode)
+      }
+
+      //how should i differentiate mouse vs keyboard keycodes?
+
+      pack.assignment[keyCode] = {     // create obj if it doesn't exist
+        ...pack.assignment?.[keyCode], // re-inherit if it did
+        [pressDir]: [{                 // unless two downs were defined, we don't have to worry about overwriting as the are unique
+          sounds: [hashName]
+          //conditions, mods, and mixers for this sound set would go here
+        }]
+      }
+    }
+    
 
     pack.metaData.push({
       association: 'PackImport',

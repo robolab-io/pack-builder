@@ -20,9 +20,11 @@
       let [channel, data] = e.data
       if (channel==='result') {
         packState.value = data
+        worker.terminate()
       }
       if (channel==='progress') {
-        progress.value = data
+        let [pro, total] = data
+        progress.value = 100 * pro / total | 0
       }
     }
 
@@ -54,7 +56,8 @@
       pattern="https://.*"
     >
     {{ packState }}
-    {{ progress }}
+    <p>{{ progress }}%</p>
+    <progress :value="progress" max="100"/>
   </div>
 </template>
 

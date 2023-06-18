@@ -1,11 +1,16 @@
-console.log('hit')
+import { handleUpload, EE, test } from './index'
 
-import { handleUpload } from './index'
+EE.on('ffmpeg-update', v =>{
+  postMessage(['progress', v])
+})
+
+/* test((v)=>{
+  console.log('RUUUU', v)
+  postMessage(['progress', v])
+}) */
 
 onmessage = async (e) => {
   let files = e.data
   let result = await handleUpload(files)
-
-  console.log(result)
   postMessage(['result', result]);
 };
