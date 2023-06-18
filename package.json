@@ -10,6 +10,8 @@
   },
   "dependencies": {
     "@vueuse/core": "^10.1.2",
+    "events": "^3.3.0",
+    "ffmpeg.js": "^4.2.9003",
     "jszip": "^3.10.1",
     "pack-builder": "file:pack-builder",
     "vue": "^3.2.47",
