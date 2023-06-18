@@ -2,17 +2,7 @@
   import { useDropZone } from '@vueuse/core'
   import { useFileDialog } from '@vueuse/core'
 
-  //import {handleUpload} from 'pack-builder'
-  
-  const { onChange, open } = useFileDialog()
-  //onChange(handleUpload)
-
-  const dropZoneRef = ref()
-
-  let packState = ref({})
-  let progress = ref(0)
-
-  async function onDrop(files) {
+  function handleUpload(files) {
     const worker = new Worker("pack-builder/worker", { type: "module" });
 
     worker.postMessage(files)
@@ -27,8 +17,18 @@
         progress.value = 100 * pro / total | 0
       }
     }
+  }
+  
+  const { onChange, open } = useFileDialog()
+  onChange(handleUpload)
 
-    //await handleUpload(files)
+  const dropZoneRef = ref()
+
+  let packState = ref({})
+  let progress = ref(0)
+
+  async function onDrop(files) {
+    handleUpload(files)
     /*
       type: "application/json" //json
       type: "" // .mecha
@@ -45,10 +45,6 @@
 <template>
   <div ref="dropZoneRef">
     Drop files here
-    <!-- <input 
-      type="file" id="file" name="file" multiple 
-      @change="handleUpload" 
-    /> -->
     <button type="button" @click="open">Choose file</button>
     <input 
       type="url" 

@@ -64,18 +64,6 @@ Pack_Detection : {
 }
 
 export let EE = new EventEmitter()
-
-export let test = (fn)=>{
-  EE.on('ffmpeg-update', fn)
-}
-/*EE.on('ffmpeg-update', function (progressArr) {
-  console.log('ROOO', progressArr)
-  let [progress, total] = progressArr
-  if (progress%20 && progress!==total) return
-  console.clear();
-  console.log(`Progress: ${100 * progress/total | 0}%`)
-})*/
-
 let spHash, parseVibes, parseModelm, parseMechaKeysLegacy;
 Parse_Packs: {
   spHash = (ogName, spData) => {
@@ -98,7 +86,7 @@ Parse_Packs: {
 
       let [progress, len] = [0, Object.entries(defines).length]
       EE.emit('ffmpeg-update', [0, 1])
-      
+
       for(let [keyCode, timeData] of Object.entries(defines)) {
         if (!timeData) continue
         let [start, duration] = timeData.map(v=>''+v/1e3)
