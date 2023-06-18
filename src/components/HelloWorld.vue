@@ -51,9 +51,16 @@
       placeholder="https://example.com/thing.(zip|mp3|wav)"
       pattern="https://.*"
     >
-    {{ packState }}
-    <p>{{ progress }}%</p>
-    <progress :value="progress" max="100"/>
+    <div v-if="progress">
+      <p>Progress: {{ progress }}%</p>
+      <progress :value="progress" max="100"/>
+    </div>
+
+    <br/>
+
+    <div>
+      {{ packState }}
+    </div>
   </div>
 </template>
 

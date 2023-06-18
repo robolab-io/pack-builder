@@ -116,6 +116,7 @@ Parse_Packs: {
 
         EE.emit('ffmpeg-update', [progress+=1, len])
       }
+      EE.emit('ffmpeg-update', [0, 1])
     }
 
     pack.name = name
