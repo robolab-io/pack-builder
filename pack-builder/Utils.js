@@ -68,5 +68,6 @@ export {
   getConfigYAML, getConfigJSON,
   EE,
   spHash, escapeRegExp, getPackName,
-  loadZip
+  loadZip,
+  parseYamlFile, parseJsonFile
 }

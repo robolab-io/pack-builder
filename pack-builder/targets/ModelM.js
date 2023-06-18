@@ -7,7 +7,7 @@ Pack_Detection : {
 }
 
 
-import { spHash, getPackName } from "../Utils";
+import { spHash, getPackName, escapeRegExp } from "../Utils";
 let parseModelm;
 Parse_Packs: {
   let genModelMSoundArr = async (arr, zip, pack) => {

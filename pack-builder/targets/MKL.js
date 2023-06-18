@@ -65,8 +65,8 @@ Parse_Packs: {
 
     extendGroupsForLegacy(pack.groups)
 
-    if (packType.isKeyPack) parseByGroupMLK(['space', 'enter', 'alt', 'alpha'], zip, pack)
-    if (packType.isMousePack) parseByGroupMLK(['left', 'right', 'middle'], zip, pack)
+    if (packType.isKeyPack) await parseByGroupMLK(['space', 'enter', 'alt', 'alpha'], zip, pack)
+    if (packType.isMousePack) await parseByGroupMLK(['left', 'right', 'middle'], zip, pack)
     
     pack.metaData.push({
       association: 'PackImport',

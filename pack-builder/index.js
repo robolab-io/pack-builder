@@ -19,7 +19,7 @@ export let packImport = async (file) => {
   if (!zip) return console.warn('Failed to parse zip')
 
   // ModelM
-  let MMPack = isMMPack(zip, pack)
+  let MMPack = await isMMPack(zip, pack)
   if (MMPack) return MMPack
 
   // Mechvibes || MechvibesPP || MechaKeysV2
@@ -28,7 +28,7 @@ export let packImport = async (file) => {
     let config = await parseJsonFile(isConfigJSON)
 
     // Mechvibes check
-    let MVPack = isMVPack(zip, pack, config)
+    let MVPack = await isMVPack(zip, pack, config)
     if (MVPack) return MVPack
     
     // V2 check
@@ -44,7 +44,6 @@ export let packImport = async (file) => {
 
 
 export async function handleUpload(files) {
-  console.log(files)
   if (files == null) return console.warn('Invalid file drop') // text snippet or something
 
   // Zip Pack
