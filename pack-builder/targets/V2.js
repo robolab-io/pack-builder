@@ -25,14 +25,9 @@ Parse_Packs: {
 }
 
 
-let isV2Pack;
+export let isV2Pack;
 Handle_Upload: {
   isV2Pack = (zip, pack, config) => {
     
   }
-}
-
-
-export {
-  isV2Pack
 }

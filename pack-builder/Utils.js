@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import EventEmitter from 'events'
 
 
-let getConfigYAML, getConfigJSON;
+export let getConfigYAML, getConfigJSON;
 Pack_Detection : {
   getConfigYAML = (zip) => {
     return zip.file(/[^\/]*\/config.(yaml|yml)/)?.[0] ?? false
@@ -15,7 +15,7 @@ Pack_Detection : {
 }
 
 
-let spHash, escapeRegExp, getPackName;
+export let spHash, escapeRegExp, getPackName;
 Parse_Packs: {
   spHash = (ogName, spData) => {
     return ogName + '_fakehash' //hash spData
@@ -29,7 +29,7 @@ Parse_Packs: {
 }
 
 
-let loadZip, parseYamlFile, parseJsonFile;
+export let loadZip, parseYamlFile, parseJsonFile;
 Handle_Upload: {
   loadZip = async (file) => {
     let zip = await JSZip
@@ -63,11 +63,4 @@ Handle_Upload: {
 }
 
 
-let EE = new EventEmitter()
-export {
-  getConfigYAML, getConfigJSON,
-  EE,
-  spHash, escapeRegExp, getPackName,
-  loadZip,
-  parseYamlFile, parseJsonFile
-}
+export let EE = new EventEmitter()

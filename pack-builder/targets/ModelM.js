@@ -75,7 +75,7 @@ Parse_Packs: {
 
 
 import { getConfigYAML, parseYamlFile } from "../Utils";
-let isMMPack;
+export let isMMPack;
 Handle_Upload: {
   isMMPack = async (zip, pack) => {
     let isConfigYAML = getConfigYAML(zip)
@@ -86,9 +86,4 @@ Handle_Upload: {
       return parseModelm(zip, config, pack)
     }
   }
-}
-
-
-export {
-  isMMPack
 }
