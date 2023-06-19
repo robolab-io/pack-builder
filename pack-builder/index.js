@@ -6,7 +6,7 @@
   type: "audio/mpeg"  // mp3
 */
 import { baseScheme } from "./schema"
-import { loadZip, getConfigJSON, parseJsonFile } from "./Utils"
+import { loadZip, getConfigJSON, parseJsonFile, spHash } from "./Utils"
 
 import { isMMPack } from "./targets/ModelM"
 import { isMVPack } from "./targets/MV"
@@ -46,24 +46,25 @@ export async function handleUpload(files) {
   // Zip Pack
   if (files.length === 1 && files[0].type === "application/x-zip-compressed") {
     let file = files[0]
-    return await packImport(file)
+    let pack = await packImport(file)
+    return ['pack', pack]
   }
 
-  // Single Audio
-  if (files.length === 1 && /^audio\//.test(files[0].type)) {
-    /*Add to sound Names and return */
+  // Audio Upload
+  let isAudioUpload = files.every(f=>/^audio\//.test(f.type))
+  if (isAudioUpload) {
+    let soundNames = files.reduce((a,c)=>({
+      ...a,
+      [spHash(c.name)]: { name: c.name, blob: c }
+    }), {})
+    return ['sound', soundNames]
   }
 
   // Directory
   if (true /*is directory*/) {
-    if (false /* All audio and No config*/) {
-      /*Add all to sound Names and return */
-    }
-
-    if (false /*if config*/) {
-      /* zip and import pack */
-      // return await packImport(zip)
-    }
+    // directories are a royal pain to deal with, just ignore for now\
+    // https://stackoverflow.com/a/53058574
+    // https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItem/webkitGetAsEntry
   }
 
   return console.warn('Invalid file drop')

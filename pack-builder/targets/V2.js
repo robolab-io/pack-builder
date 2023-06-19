@@ -19,7 +19,6 @@ Parse_Packs: {
       name: ''
     })
 
-    console.log(pack)
     return pack
   }
 }

@@ -114,7 +114,6 @@ Parse_Packs: {
       id, name, key_define_type, includes_numpad
     })
 
-    console.log(pack)
     return pack
   }
 }

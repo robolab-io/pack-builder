@@ -8,6 +8,6 @@ EE.on('ffmpeg-update', v =>{
 
 onmessage = async (e) => {
   let files = e.data
-  let result = await handleUpload(files)
-  postMessage(['result', result]);
+  let [resultType, value] = await handleUpload(files)
+  postMessage([`result-${resultType}`, value]);
 };

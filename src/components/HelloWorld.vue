@@ -8,13 +8,23 @@
     worker.postMessage(files)
     worker.onmessage = e => {
       let [channel, data] = e.data
-      if (channel==='result') {
-        packState.value = data
-        worker.terminate()
-      }
       if (channel==='progress') {
         let [pro, total] = data
         progress.value = 100 * pro / total | 0
+      } else 
+      if (channel==='result-pack') {
+        // prompt user if they are okay with overwriting their current session
+        packState.value = data
+      } else 
+      if (channel==='result-sound') {
+        packState.value.soundNames = {
+          ...(packState.value.soundNames ?? {}),
+          ...data
+        }
+      }
+      if (/^result/.test(channel)) {
+        console.log(e.data)
+        worker.terminate()
       }
     }
   }
@@ -44,7 +54,7 @@
 
 <template>
   <div ref="dropZoneRef">
-    Drop files here
+    Drop files here [ Only accepts a Zipped pack or Audio file(s) ]
     <button type="button" @click="open">Choose file</button>
     <input 
       type="url" 
