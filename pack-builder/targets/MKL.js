@@ -80,7 +80,7 @@ Parse_Packs: {
 }
 
 
-let isMKLPack;
+export let isMKLPack;
 Handle_Upload: {
   isMKLPack = (zip, pack) => {
     let isMechaKeysLegacy = checkMechaKeysLegacy(zip)
@@ -89,9 +89,4 @@ Handle_Upload: {
       return parseMechaKeysLegacy(zip, isMechaKeysLegacy, pack)
     }
   }
-}
-
-
-export {
-  isMKLPack
 }

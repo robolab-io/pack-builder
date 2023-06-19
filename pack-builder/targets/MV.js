@@ -120,7 +120,7 @@ Parse_Packs: {
 }
 
 
-let isMVPack;
+export let isMVPack;
 Handle_Upload: {
   isMVPack = async (zip, pack, config) => {
     if (isMechVibesConfig(config)) {
@@ -134,9 +134,4 @@ Handle_Upload: {
       return parseVibes(zip, config, pack)
     }
   }
-}
-
-
-export {
-  isMVPack
 }

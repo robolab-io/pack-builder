@@ -14,13 +14,12 @@ import { isMKLPack } from "./targets/MKL"
 
 export let packImport = async (file) => {
   let pack = baseScheme()
+  let outPack, zip;
 
-  let zip = await loadZip(file)
-  if (!zip) return console.warn('Failed to parse zip')
+  if (!(zip ??= await loadZip(file))) return console.warn('Failed to parse zip')
 
   // ModelM
-  let MMPack = await isMMPack(zip, pack)
-  if (MMPack) return MMPack
+  if (outPack ??= await isMMPack(zip, pack)) return outPack
 
   // Mechvibes || MechvibesPP || MechaKeysV2
   let isConfigJSON = getConfigJSON(zip)
@@ -28,16 +27,14 @@ export let packImport = async (file) => {
     let config = await parseJsonFile(isConfigJSON)
 
     // Mechvibes check
-    let MVPack = await isMVPack(zip, pack, config)
-    if (MVPack) return MVPack
+    if (outPack ??= await isMVPack(zip, pack, config)) return outPack
     
     // V2 check
     return console.log('MechaKeys V2', config?.schema) // (will prob just have a schema key)
   }
 
   // MechaKeys
-  let MKLPack = await isMKLPack(zip, pack)
-  if (MKLPack) return MKLPack
+  if (outPack ??= await isMKLPack(zip, pack)) return outPack
 
   return console.warn('failed to identify zip pack')
 }
