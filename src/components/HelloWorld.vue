@@ -3,7 +3,8 @@
   import { useFileDialog } from '@vueuse/core'
   import { useFileSystemAccess  } from '@vueuse/core'
 
-  const { save, saveAs, updateData } = useFileSystemAccess()
+  // NOTE: might be worth moving to this sort of system. I could handle folders then too
+  // const { data, save, saveAs, updateData } = useFileSystemAccess()
 
   let msgHandler = worker => e => {
     let [channel, data] = e.data
