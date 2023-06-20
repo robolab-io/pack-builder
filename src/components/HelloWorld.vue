@@ -1,10 +1,15 @@
 <script setup>
-  import { useDropZone } from '@vueuse/core'
-  import { useFileDialog } from '@vueuse/core'
-  import { useFileSystemAccess  } from '@vueuse/core'
+  import { useDropZone, useFileDialog } from '@vueuse/core'
 
   // NOTE: might be worth moving to this sort of system. I could handle folders then too
+  // import { useFileSystemAccess  } from '@vueuse/core'
   // const { data, save, saveAs, updateData } = useFileSystemAccess()
+
+  let elWithAttrs = (tag, attrs, parent=document)=> {
+    const el = parent.createElement(tag)
+    Object.entries(attrs).forEach(([k,v])=>el[k]=v)
+    return el
+  }
 
   let msgHandler = worker => e => {
     let [channel, data] = e.data
@@ -23,22 +28,18 @@
       }
     } else 
     if (channel==='result-download') {
-      console.log('zipBlobFE')
-      /* const a = document.createElement('a')
-      a.href = e.data
-      a.download = 'test.zip'
-      a.click() */
-
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(data);
-      a.download = 'test.zip'
+      let {link, name} = data
+      const a = elWithAttrs('a', {download: name, href: link})
+      a.addEventListener("click", ()=>{
+        a.remove()
+        setTimeout(URL.revokeObjectURL, 500, link)
+      })
       a.click()
-
     }
 
     if (/^result/.test(channel)) {
       console.log(e.data)
-      //worker.terminate()
+      worker.terminate()
     }
   }
 

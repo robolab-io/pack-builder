@@ -1,8 +1,6 @@
 import JSZip from 'jszip'
 
 export async function download(target, packState) {
-  console.log('hi', target, packState)
-
   let zip = new JSZip()
   
   MKL : {
@@ -12,15 +10,10 @@ export async function download(target, packState) {
       createFolders: true
     })
   }
-  MM : {
-   
-  }
-  MV : {
-    
-  }
-  V2 : {
-    
-  }
+  MM : { }
+  MV : { }
+  V2 : { }
+
   let res = await zip.generateAsync({type: 'blob'})
-  return res
+  return [res, 'testing.zip']
 }
