@@ -16,11 +16,8 @@ onmessage = async ({data:[channel, ...data]}) => {
   } else
   if (channel==='download') {
     let [target, packState] = data
-    let zipBlob = await download(target, packState)
-
-    postMessage(['result-download', zipBlob]);
-
-    //const zipLink = URL.createObjectURL(zipBlob);
-    //postMessage(['result-download', zipLink]);
+    let [zipBlob, name] = await download(target, packState)
+    const zipLink = URL.createObjectURL(zipBlob);
+    postMessage(['result-download', {link: zipLink, name}]);
   }
 };
