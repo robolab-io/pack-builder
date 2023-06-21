@@ -17,7 +17,7 @@ export let baseScheme = ()=>structuredClone({
     }
   */},
   assignment: {
-    default: [],
+    default: {},
   },
   metaData: [],
 
