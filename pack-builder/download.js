@@ -7,9 +7,9 @@ export async function download(target, packState) {
   
   MKL : {
     let keyGroups = new Map([
-      [['space', '57'],  'space'],
-      [['enter', '28'],  'enter'],
-      [['alt', '56'],    'alt'],
+      [['space', 57],  'space'],
+      [['enter', 28],  'enter'],
+      [['alt', 56],    'alt'],
       [['alpha', 'default'],  'alpha'],
       [['left',   'M1'],  'left'],
       [['right',  'M2'],  'right'],
@@ -27,19 +27,19 @@ export async function download(target, packState) {
       let predefined = [...keyGroups.keys()].flat()
       for(let [key, soundObj] of Object.entries(assignment)) {
         // ensure numbers are ints post .entries()
-        //key = Number.isNaN(+key) ? key : Number(key)
+        key = Number.isNaN(+key) ? key : Number(key)
 
         // properly assign to predefined legacy groups
         for(const [arr, outKey] of keyGroups) {
           let selectKey = out.assignment[outKey]
-          if (arr.includes(''+key)) {
+          if (arr.includes(key)) {
             selectKey.up = [...selectKey?.up??[], ...soundObj?.up??[]]
             selectKey.down = [...selectKey?.down??[] , ...soundObj?.down??[]]
           }
         }
 
         // default to alpha
-        if (!predefined.includes(''+key)) {
+        if (!predefined.includes(key)) {
           /*this is not ideal as any custom could end up here eg (mouseGroup[M1,M2,M3], specialKeyGroup[28,56,57])  
             We'd need to verify the contents of a group both here and maybe even above
           */
