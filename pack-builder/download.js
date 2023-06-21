@@ -50,7 +50,6 @@ export async function download(target, packState) {
       }
     }
 
-    console.log(JSON.stringify(out))
     Zip_Data : {
       for(let [MKLGroup, soundsObj] of Object.entries(out.assignment)) {
         for(let dir of ['up', 'down']) {
